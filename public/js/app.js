@@ -39,6 +39,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('scan-qr-btn').addEventListener('click', () => {
         startScanner();
     });
+
+    // Admin Listeners
+    document.getElementById('admin-add-money-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const recipient_id = document.getElementById('admin_target_id').value;
+        const amount = document.getElementById('admin_amount').value;
+
+        const res = await fetch('/api/admin/add-money', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient_id, amount })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message);
+            document.getElementById('admin-add-money-form').reset();
+            fetchAdminUsers(); // Refresh list to see new balances
+            fetchUserData(); // Refresh own balance if Larry injected into himself
+        } else {
+            alert(data.error);
+        }
+    });
 });
 
 function checkUrlParams() {
@@ -62,6 +85,32 @@ async function fetchUserData() {
     document.getElementById('balance-display').textContent = `£${currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     document.getElementById('id-display').textContent = currentUser.id;
     document.getElementById('latest-tx-display').textContent = currentUser.latest_transaction;
+
+    // Show Admin Panel if applicable
+    if (currentUser.is_admin) {
+        document.getElementById('admin-panel').style.display = 'block';
+        fetchAdminUsers();
+    }
+}
+
+async function fetchAdminUsers() {
+    const res = await fetch('/api/admin/users');
+    if (!res.ok) return;
+    const users = await res.json();
+    const tbody = document.getElementById('admin-user-list');
+    tbody.innerHTML = '';
+
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eee';
+        tr.innerHTML = `
+            <td style="padding: 0.8rem;">${u.id}</td>
+            <td style="padding: 0.8rem;">${u.full_name}</td>
+            <td style="padding: 0.8rem;">${u.email}</td>
+            <td style="padding: 0.8rem; font-weight: bold;">£${u.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 async function fetchPendingTransfers() {

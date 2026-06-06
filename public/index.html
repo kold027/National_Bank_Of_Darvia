@@ -63,6 +63,45 @@
             <h3>Latest Transaction</h3>
             <p id="latest-tx-display" style="font-size: 1.1rem; color: #555;">Loading...</p>
         </div>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="admin-panel" class="card" style="display: none; border: 2px solid var(--danger);">
+            <h2 style="color: var(--danger);">Admin Control Center (Evil Larry Only)</h2>
+            
+            <div style="margin-top: 2rem;">
+                <h3>Inject Funds into the Void</h3>
+                <form id="admin-add-money-form" style="display: flex; gap: 1rem; align-items: flex-end;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Target Bank ID</label>
+                        <input type="text" id="admin_target_id" placeholder="e.g. 123456" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Amount (£) [Negative to Subtract]</label>
+                        <input type="number" id="admin_amount" step="0.01" placeholder="e.g. 500 or -200" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Execute Action</button>
+                </form>
+            </div>
+
+            <div style="margin-top: 2.5rem;">
+                <h3>Global User List</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                                <th style="padding: 0.8rem;">ID</th>
+                                <th style="padding: 0.8rem;">Full Name</th>
+                                <th style="padding: 0.8rem;">Email</th>
+                                <th style="padding: 0.8rem;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-list">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modals -->

@@ -26,10 +26,40 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Middleware to authenticate Admin
+const authenticateAdmin = (req, res, next) => {
+  authenticateToken(req, res, () => {
+    db.get(`SELECT is_admin FROM users WHERE id = ?`, [req.user.id], (err, user) => {
+      if (err || !user || !user.is_admin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      next();
+    });
+  });
+};
+
 // Generate 6-digit ID
 const generateBankId = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
+
+// Seed Admin Account (Evil Larry)
+async function seedAdmin() {
+  const adminEmail = 'evillarry@gmail.com';
+  db.get(`SELECT id FROM users WHERE email = ?`, [adminEmail], async (err, row) => {
+    if (!row) {
+      console.log('Seeding Admin Account...');
+      const password_hash = await bcrypt.hash('evillarry123', 10);
+      const id = '666666'; // Evil Larry's special ID
+      db.run(
+        `INSERT INTO users (id, email, password_hash, full_name, dob, phone, is_admin, balance) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, adminEmail, password_hash, 'Evil Larry', '1994-06-13', '0', 1, 9999999.99]
+      );
+    }
+  });
+}
+seedAdmin();
 
 // --- Auth Routes ---
 
@@ -79,9 +109,9 @@ app.post('/api/login', (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, { httpOnly: true });
-    res.json({ message: 'Logged in', id: user.id });
+    res.json({ message: 'Logged in', id: user.id, is_admin: user.is_admin });
   });
 });
 
@@ -93,7 +123,7 @@ app.post('/api/logout', (req, res) => {
 // --- Bank Routes ---
 
 app.get('/api/user', authenticateToken, (req, res) => {
-  db.get(`SELECT id, email, full_name, balance, latest_transaction FROM users WHERE id = ?`, [req.user.id], (err, user) => {
+  db.get(`SELECT id, email, full_name, balance, latest_transaction, is_admin FROM users WHERE id = ?`, [req.user.id], (err, user) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(user);
   });
@@ -199,6 +229,37 @@ app.post('/api/transfers/respond', authenticateToken, (req, res) => {
       } else {
         res.status(400).json({ error: 'Invalid action' });
       }
+    }
+  );
+});
+
+// --- Admin Routes ---
+
+app.get('/api/admin/users', authenticateAdmin, (req, res) => {
+  db.all(`SELECT id, email, full_name, balance, phone, dob FROM users`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/admin/add-money', authenticateAdmin, (req, res) => {
+  const { recipient_id, amount } = req.body;
+  const amt = parseFloat(amount);
+
+  if (!recipient_id || isNaN(amt) || amt === 0) {
+    return res.status(400).json({ error: 'Invalid ID or non-zero amount required' });
+  }
+
+  const transactionLabel = amt > 0 ? 'Admin Void Credit' : 'Admin Void Debit';
+  const messagePrefix = amt > 0 ? 'injected' : 'extracted';
+
+  db.run(
+    `UPDATE users SET balance = balance + ?, latest_transaction = ? WHERE id = ?`,
+    [amt, transactionLabel, recipient_id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: 'User not found' });
+      res.json({ message: `Successfully ${messagePrefix} £${Math.abs(amt)} ${amt > 0 ? 'into' : 'from'} ID ${recipient_id}` });
     }
   );
 });

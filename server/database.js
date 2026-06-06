@@ -13,7 +13,8 @@ db.serialize(() => {
     full_name TEXT,
     dob TEXT,
     phone TEXT,
-    balance REAL DEFAULT 50.00,
+    is_admin INTEGER DEFAULT 0,
+    balance REAL DEFAULT 0.00,
     latest_transaction TEXT DEFAULT 'Account Opened'
   )`);
 
