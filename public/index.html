@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - National Bank of Darvia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- QR Libraries -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1 id="bank-logo">National Bank of Darvia</h1>
+        <div class="header-user-info">
+            <span id="user-display"></span>
+            <button id="logout-btn" class="btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Balance Section -->
+        <div class="card balance-card">
+            <p>Available Balance</p>
+            <h2 id="balance-display">£0.00</h2>
+            <div style="margin-top: 1rem;">
+                <p>Bank ID: <strong id="id-display">------</strong></p>
+                <button id="show-qr-btn" class="btn btn-secondary" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; margin-top: 0.5rem;">My QR Code</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Transfer Section -->
+            <div class="card">
+                <h3>Send Money</h3>
+                <form id="transfer-form">
+                    <div class="form-group">
+                        <label>Recipient Bank ID (6-digits)</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="recipient_id" placeholder="e.g. 123456" required style="flex: 1;">
+                            <button type="button" id="scan-qr-btn" class="btn btn-primary" style="padding: 0.7rem;">Scan</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (£)</label>
+                        <input type="number" id="amount" step="0.01" min="0.01" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Initiate Transfer</button>
+                </form>
+            </div>
+
+            <!-- Notifications Section -->
+            <div class="card">
+                <h3>Pending Incoming Transfers</h3>
+                <div id="pending-transfers-list">
+                    <p>No pending transfers.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Transaction -->
+        <div class="card">
+            <h3>Latest Transaction</h3>
+            <p id="latest-tx-display" style="font-size: 1.1rem; color: #555;">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('qr-modal')">&times;</span>
+            <h3>My Bank ID QR Code</h3>
+            <div id="qrcode" style="display: flex; justify-content: center; margin: 1.5rem 0;"></div>
+            <div id="qr-link-container" style="display: flex; gap: 0.5rem; background: #f0f0f0; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; align-items: center;">
+                <input type="text" id="qr-link-text" readonly style="flex: 1; border: none; background: transparent; font-size: 0.85rem; color: #666; outline: none;">
+                <button id="copy-link-btn" class="btn btn-primary btn-sm" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; white-space: nowrap;">Copy Link</button>
+            </div>
+            <p style="text-align: center;">Ask others to scan this or share your link to receive money.</p>
+        </div>
+    </div>
+
+    <div id="scan-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="stopScanner()">&times;</span>
+            <h3>Scan Recipient QR Code</h3>
+            <div id="reader" style="width: 100%; min-height: 250px;"></div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

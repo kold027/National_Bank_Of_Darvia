@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - National Bank of Darvia</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>National Bank of Darvia</h1>
+    </header>
+    <div class="container">
+        <div class="card" style="max-width: 500px; margin: auto;">
+            <h2>Open a Personal Account</h2>
+            <p style="margin-bottom: 1.5rem; color: #666;">Please provide your details below to join Darvia's premier bank.</p>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="full_name" placeholder="e.g. John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="dob" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="confirm_password" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Telephone Number</label>
+                    <input type="tel" id="phone" placeholder="e.g. +44 7700 900000" required>
+                </div>
+
+                <div class="form-group">
+                    <label>E-mail Address</label>
+                    <input type="email" id="email" placeholder="e.g. john.doe@example.com" required>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1.5rem;">
+                    <input type="checkbox" id="tos" style="width: auto; margin-top: 0.3rem;" required>
+                    <label for="tos" style="font-weight: normal; font-size: 0.9rem;">
+                        I agree with the <a href="#" style="color: var(--primary-blue);">Terms of Services</a> and privacy policy of National Bank of Darvia.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;">Create Account</button>
+            </form>
+            
+            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+                Already a member? <a href="login.html" style="font-weight: bold; color: var(--primary-blue);">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const full_name = document.getElementById('full_name').value;
+            const dob = document.getElementById('dob').value;
+            const password = document.getElementById('password').value;
+            const confirm_password = document.getElementById('confirm_password').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const terms_accepted = document.getElementById('tos').checked;
+
+            if (password !== confirm_password) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            if (!terms_accepted) {
+                alert("You must agree to the Terms of Service.");
+                return;
+            }
+
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    full_name, 
+                    dob, 
+                    password, 
+                    confirm_password, 
+                    phone, 
+                    email, 
+                    terms_accepted 
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Welcome to the National Bank of Darvia! Your account has been created. Your unique Bank ID is: ${data.id}. Please use it to receive transfers.`);
+                window.location.href = 'login.html';
+            } else {
+                alert(data.error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+node_modules/
+server/bank.db
+.env
+.DS_Store
