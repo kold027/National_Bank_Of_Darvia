@@ -2,6 +2,7 @@ let html5QrCode;
 let currentUser;
 
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     fetchUserData();
     fetchPendingTransfers();
     checkUrlParams();
@@ -39,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('scan-qr-btn').addEventListener('click', () => {
         startScanner();
     });
+
+    document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
 
     // Admin Listeners
     document.getElementById('admin-add-money-form').addEventListener('submit', async (e) => {
@@ -82,7 +85,17 @@ async function fetchUserData() {
     }
     currentUser = await res.json();
     document.getElementById('user-display').textContent = `Welcome, ${currentUser.full_name}`;
-    document.getElementById('balance-display').textContent = `£${currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    
+    const balanceEl = document.getElementById('balance-display');
+    balanceEl.textContent = currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2});
+    
+    // Apply red color to numeric balance if negative
+    if (currentUser.balance < 0) {
+        balanceEl.classList.add('neg-balance');
+    } else {
+        balanceEl.classList.remove('neg-balance');
+    }
+
     document.getElementById('id-display').textContent = currentUser.id;
     document.getElementById('latest-tx-display').textContent = currentUser.latest_transaction;
 
@@ -107,7 +120,9 @@ async function fetchAdminUsers() {
             <td style="padding: 0.8rem;">${u.id}</td>
             <td style="padding: 0.8rem;">${u.full_name}</td>
             <td style="padding: 0.8rem;">${u.email}</td>
-            <td style="padding: 0.8rem; font-weight: bold;">£${u.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td style="padding: 0.8rem; font-weight: bold;" class="${u.balance < 0 ? 'neg-balance' : ''}">
+                £${u.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -155,6 +170,32 @@ async function respondTransfer(transfer_id, action) {
         fetchPendingTransfers(); // Refresh list
     } else {
         alert(data.error);
+    }
+}
+
+// --- Theme Functions ---
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeBtn(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeBtn(newTheme);
+}
+
+function updateThemeBtn(theme) {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (theme === 'dark') {
+        btn.innerHTML = '✹ Light mode';
+    } else {
+        btn.innerHTML = '⏾ Dark mode';
     }
 }
 

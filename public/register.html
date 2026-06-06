@@ -9,6 +9,9 @@
 <body>
     <header>
         <h1>National Bank of Darvia</h1>
+        <div class="header-user-info">
+            <span id="theme-toggle-btn" class="theme-toggle">⏾ Dark mode</span>
+        </div>
     </header>
     <div class="container">
         <div class="card" style="max-width: 500px; margin: auto;">
@@ -64,6 +67,20 @@
     </div>
 
     <script>
+        // Theme initialization
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        toggleBtn.innerHTML = savedTheme === 'dark' ? '✹ Light mode' : '⏾ Dark mode';
+
+        toggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            toggleBtn.innerHTML = newTheme === 'dark' ? '✹ Light mode' : '⏾ Dark mode';
+        });
+
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             

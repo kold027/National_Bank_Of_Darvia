@@ -2,11 +2,28 @@
     --primary-blue: #003366;
     --secondary-blue: #00509d;
     --light-blue: #e6f0ff;
+    --bg-color: #f4f4f4;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --header-text: #ffffff;
     --white: #ffffff;
     --gray: #f4f4f4;
-    --text-dark: #333333;
     --success: #28a745;
     --danger: #dc3545;
+    --border-color: #eee;
+    --input-bg: #ffffff;
+    --input-text: #333333;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --gray: #2d2d2d;
+    --border-color: #333;
+    --light-blue: #1a2a3a;
+    --input-bg: #2d2d2d;
+    --input-text: #ffffff;
 }
 
 * {
@@ -17,14 +34,15 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--gray);
-    color: var(--text-dark);
+    background-color: var(--bg-color);
+    color: var(--text-color);
     line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 header {
     background-color: var(--primary-blue);
-    color: var(--white);
+    color: var(--header-text);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -40,8 +58,17 @@ header h1 {
     font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    color: var(--white) !important;
+    color: var(--header-text) !important;
     text-transform: uppercase;
+}
+
+.theme-toggle {
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    color: var(--header-text);
+    user-select: none;
+    font-weight: bold;
 }
 
 .header-user-info {
@@ -57,16 +84,23 @@ header h1 {
 }
 
 .card {
-    background: var(--white);
+    background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     margin-bottom: 1.5rem;
+    transition: background-color 0.3s;
 }
 
 h1, h2, h3 {
     color: var(--primary-blue);
     margin-top: 0;
+}
+
+[data-theme="dark"] h1, 
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3 {
+    color: var(--secondary-blue);
 }
 
 .btn {
@@ -111,22 +145,28 @@ h1, h2, h3 {
 .form-group input {
     width: 100%;
     padding: 0.7rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
+    background-color: var(--input-bg);
+    color: var(--input-text);
 }
 
 .balance-card {
     background-color: var(--primary-blue);
-    color: var(--white);
+    color: var(--header-text);
     text-align: center;
     padding: 2rem 1rem;
 }
 
 .balance-card h2 {
-    color: var(--white);
+    color: var(--header-text) !important;
     font-size: 2.2rem;
     margin: 0.5rem 0;
+}
+
+.neg-balance {
+    color: var(--danger) !important;
 }
 
 .dashboard-grid {
@@ -140,7 +180,7 @@ h1, h2, h3 {
     justify-content: space-between;
     align-items: center;
     padding: 0.8rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color);
     gap: 0.5rem;
 }
 
@@ -155,12 +195,12 @@ h1, h2, h3 {
 
 #logout-btn {
     background: transparent;
-    border: 1px solid var(--white);
-    color: var(--white);
+    border: 1px solid var(--header-text);
+    color: var(--header-text);
 }
 
 #logout-btn:hover {
-    background: var(--white);
+    background: var(--header-text);
     color: var(--primary-blue);
 }
 
@@ -221,7 +261,8 @@ h1, h2, h3 {
 }
 
 .modal-content {
-    background-color: var(--white);
+    background-color: var(--card-bg);
+    color: var(--text-color);
     margin: 10% auto;
     padding: 2rem;
     border-radius: 12px;
@@ -243,7 +284,7 @@ h1, h2, h3 {
 }
 
 .close:hover {
-    color: var(--text-dark);
+    color: var(--text-color);
 }
 
 #reader__dashboard_section_csr button {
@@ -258,7 +299,7 @@ h1, h2, h3 {
 #qr-link-container {
     display: flex;
     gap: 0.5rem;
-    background: #f0f0f0;
+    background: var(--gray);
     padding: 0.8rem;
     border-radius: 6px;
     margin-bottom: 1rem;
@@ -270,7 +311,7 @@ h1, h2, h3 {
     border: none;
     background: transparent;
     font-size: 0.85rem;
-    color: #666;
+    color: var(--text-color);
     outline: none;
     overflow: hidden;
     text-overflow: ellipsis;
