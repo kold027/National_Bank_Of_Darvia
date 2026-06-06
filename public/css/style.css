@@ -272,6 +272,27 @@ h1, h2, h3 {
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
+.light-force {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+}
+
+.light-force h3 {
+    color: #003366 !important;
+}
+
+.light-force p {
+    color: #333333 !important;
+}
+
+.light-force .close {
+    color: #aaa !important;
+}
+
+.light-force .close:hover {
+    color: #000 !important;
+}
+
 .close {
     color: #aaa;
     float: right;

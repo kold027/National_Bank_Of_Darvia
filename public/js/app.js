@@ -1,5 +1,6 @@
 let html5QrCode;
 let currentUser;
+let pollInterval;
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
@@ -7,8 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPendingTransfers();
     checkUrlParams();
 
+    // Start auto-refresh polling (every 15 seconds)
+    pollInterval = setInterval(() => {
+        fetchPendingTransfers();
+    }, 15000);
+
     // Event Listeners
     document.getElementById('logout-btn').addEventListener('click', async () => {
+        clearInterval(pollInterval);
         await fetch('/api/logout', { method: 'POST' });
         window.location.href = 'login.html';
     });
@@ -17,11 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const recipient_id = document.getElementById('recipient_id').value;
         const amount = document.getElementById('amount').value;
+        const note = document.getElementById('transfer_note').value;
 
         const res = await fetch('/api/transfer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ recipient_id, amount })
+            body: JSON.stringify({ recipient_id, amount, note })
         });
 
         const data = await res.json();
@@ -59,11 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
             alert(data.message);
             document.getElementById('admin-add-money-form').reset();
-            fetchAdminUsers(); // Refresh list to see new balances
-            fetchUserData(); // Refresh own balance if Larry injected into himself
+            fetchAdminUsers(); 
+            fetchUserData(); 
         } else {
             alert(data.error);
         }
+    });
+
+    document.getElementById('admin-search-input').addEventListener('input', (e) => {
+        fetchAdminUsers(e.target.value);
     });
 });
 
@@ -72,7 +84,6 @@ function checkUrlParams() {
     const recipient = params.get('recipient');
     if (recipient && recipient.length === 6) {
         document.getElementById('recipient_id').value = recipient;
-        // Clean up URL without refreshing
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
@@ -89,7 +100,6 @@ async function fetchUserData() {
     const balanceEl = document.getElementById('balance-display');
     balanceEl.textContent = `£${currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     
-    // Apply red color to full balance (including £) if negative
     if (currentUser.balance < 0) {
         balanceEl.classList.add('neg-balance');
     } else {
@@ -99,15 +109,14 @@ async function fetchUserData() {
     document.getElementById('id-display').textContent = currentUser.id;
     document.getElementById('latest-tx-display').textContent = currentUser.latest_transaction;
 
-    // Show Admin Panel if applicable
     if (currentUser.is_admin) {
         document.getElementById('admin-panel').style.display = 'block';
         fetchAdminUsers();
     }
 }
 
-async function fetchAdminUsers() {
-    const res = await fetch('/api/admin/users');
+async function fetchAdminUsers(query = '') {
+    const res = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}`);
     if (!res.ok) return;
     const users = await res.json();
     const tbody = document.getElementById('admin-user-list');
@@ -115,7 +124,7 @@ async function fetchAdminUsers() {
 
     users.forEach(u => {
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #eee';
+        tr.style.borderBottom = '1px solid var(--border-color)';
         tr.innerHTML = `
             <td style="padding: 0.8rem;">${u.id}</td>
             <td style="padding: 0.8rem;">${u.full_name}</td>
@@ -123,13 +132,35 @@ async function fetchAdminUsers() {
             <td style="padding: 0.8rem; font-weight: bold;" class="${u.balance < 0 ? 'neg-balance' : ''}">
                 £${u.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}
             </td>
+            <td style="padding: 0.8rem;">
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${u.full_name}')">Delete</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
+async function deleteUser(id, name) {
+    if (id === currentUser.id) {
+        alert("You cannot delete yourself, Larry!");
+        return;
+    }
+
+    if (confirm(`ARE YOU SURE? This will permanently delete ${name} (ID: ${id}) and all their transfers.`)) {
+        const res = await fetch(`/api/admin/user/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message);
+            fetchAdminUsers(document.getElementById('admin-search-input').value);
+        } else {
+            alert(data.error);
+        }
+    }
+}
+
 async function fetchPendingTransfers() {
     const res = await fetch('/api/transfers/pending');
+    if (!res.ok) return;
     const transfers = await res.json();
     const list = document.getElementById('pending-transfers-list');
     
@@ -142,9 +173,10 @@ async function fetchPendingTransfers() {
     transfers.forEach(t => {
         const div = document.createElement('div');
         div.className = 'pending-transfer';
+        const noteHtml = t.note ? `<br><small style="color: #888;">Note: ${t.note}</small>` : '';
         div.innerHTML = `
             <div>
-                <strong>From: ${t.sender_name}</strong><br>
+                <strong>From: ${t.sender_name}</strong>${noteHtml}<br>
                 <span>Amount: £${t.amount.toFixed(2)}</span>
             </div>
             <div>
@@ -166,8 +198,8 @@ async function respondTransfer(transfer_id, action) {
     const data = await res.json();
     if (res.ok) {
         alert(data.message);
-        fetchUserData(); // Refresh balance and latest tx
-        fetchPendingTransfers(); // Refresh list
+        fetchUserData(); 
+        fetchPendingTransfers(); 
     } else {
         alert(data.error);
     }
@@ -205,9 +237,8 @@ function showMyQR() {
     const modal = document.getElementById('qr-modal');
     const qrContainer = document.getElementById('qrcode');
     const linkInput = document.getElementById('qr-link-text');
-    qrContainer.innerHTML = ''; // Clear previous
+    qrContainer.innerHTML = ''; 
     
-    // Generate full URL for "Smart" scanning
     const smartUrl = `${window.location.origin}${window.location.pathname}?recipient=${currentUser.id}`;
     linkInput.value = smartUrl;
 
@@ -225,7 +256,7 @@ function showMyQR() {
 document.getElementById('copy-link-btn').addEventListener('click', () => {
     const linkInput = document.getElementById('qr-link-text');
     linkInput.select();
-    linkInput.setSelectionRange(0, 99999); // For mobile devices
+    linkInput.setSelectionRange(0, 99999); 
     navigator.clipboard.writeText(linkInput.value).then(() => {
         const btn = document.getElementById('copy-link-btn');
         const originalText = btn.textContent;
@@ -249,16 +280,13 @@ function startScanner() {
         { facingMode: "environment" }, 
         config,
         (decodedText) => {
-            // Handle both plain ID and full Smart URL
             let targetId = decodedText;
             try {
                 if (decodedText.includes('recipient=')) {
                     const url = new URL(decodedText);
                     targetId = url.searchParams.get('recipient');
                 }
-            } catch (e) {
-                // If not a URL, assume it's a plain ID
-            }
+            } catch (e) {}
 
             if (targetId && targetId.length === 6) {
                 document.getElementById('recipient_id').value = targetId;
@@ -267,9 +295,7 @@ function startScanner() {
                 alert("Invalid QR Code content.");
             }
         },
-        (errorMessage) => {
-            // Error (silent)
-        }
+        (errorMessage) => {}
     ).catch((err) => {
         console.error(err);
         alert("Camera access denied or error occurred.");
@@ -293,7 +319,6 @@ function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-// Close modals when clicking outside
 window.onclick = function(event) {
     if (event.target.className === 'modal') {
         if (event.target.id === 'scan-modal') {

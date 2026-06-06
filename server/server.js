@@ -130,7 +130,7 @@ app.get('/api/user', authenticateToken, (req, res) => {
 });
 
 app.post('/api/transfer', authenticateToken, (req, res) => {
-  const { recipient_id, amount } = req.body;
+  const { recipient_id, amount, note } = req.body;
   const amt = parseFloat(amount);
 
   if (!recipient_id || isNaN(amt) || amt <= 0) {
@@ -153,8 +153,8 @@ app.post('/api/transfer', authenticateToken, (req, res) => {
 
       // Create pending transfer
       db.run(
-        `INSERT INTO transfers (sender_id, recipient_id, amount, status) VALUES (?, ?, ?, ?)`,
-        [req.user.id, recipient_id, amt, 'pending'],
+        `INSERT INTO transfers (sender_id, recipient_id, amount, note, status) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, recipient_id, amt, note || null, 'pending'],
         function(err) {
           if (err) return res.status(500).json({ error: err.message });
           res.json({ message: 'Transfer initiated. Waiting for recipient to accept.' });
@@ -166,7 +166,7 @@ app.post('/api/transfer', authenticateToken, (req, res) => {
 
 app.get('/api/transfers/pending', authenticateToken, (req, res) => {
   db.all(
-    `SELECT t.id, t.amount, u.full_name as sender_name 
+    `SELECT t.id, t.amount, t.note, u.full_name as sender_name 
      FROM transfers t 
      JOIN users u ON t.sender_id = u.id 
      WHERE t.recipient_id = ? AND t.status = 'pending'`,
@@ -209,13 +209,15 @@ app.post('/api/transfers/respond', authenticateToken, (req, res) => {
               return res.status(400).json({ error: 'Sender no longer has sufficient funds' });
             }
 
+            const noteSuffix = transfer.note ? ` (Note: ${transfer.note})` : '';
+
             // Update sender
             db.run(`UPDATE users SET balance = balance - ?, latest_transaction = ? WHERE id = ?`, 
-              [transfer.amount, `Sent £${transfer.amount} to ${transfer.recipient_name}`, transfer.sender_id]);
+              [transfer.amount, `Sent £${transfer.amount} to ${transfer.recipient_name}${noteSuffix}`, transfer.sender_id]);
 
             // Update recipient
             db.run(`UPDATE users SET balance = balance + ?, latest_transaction = ? WHERE id = ?`, 
-              [transfer.amount, `Received £${transfer.amount} from ${transfer.sender_name}`, transfer.recipient_id]);
+              [transfer.amount, `Received £${transfer.amount} from ${transfer.sender_name}${noteSuffix}`, transfer.recipient_id]);
 
             // Update transfer status
             db.run(`UPDATE transfers SET status = 'accepted' WHERE id = ?`, [transfer_id]);
@@ -236,10 +238,17 @@ app.post('/api/transfers/respond', authenticateToken, (req, res) => {
 // --- Admin Routes ---
 
 app.get('/api/admin/users', authenticateAdmin, (req, res) => {
-  db.all(`SELECT id, email, full_name, balance, phone, dob FROM users`, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  const search = req.query.search ? `%${req.query.search}%` : '%';
+  db.all(
+    `SELECT id, email, full_name, balance, phone, dob 
+     FROM users 
+     WHERE full_name LIKE ? OR email LIKE ? OR id LIKE ?`, 
+    [search, search, search], 
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
 });
 
 app.post('/api/admin/add-money', authenticateAdmin, (req, res) => {
@@ -262,6 +271,26 @@ app.post('/api/admin/add-money', authenticateAdmin, (req, res) => {
       res.json({ message: `Successfully ${messagePrefix} £${Math.abs(amt)} ${amt > 0 ? 'into' : 'from'} ID ${recipient_id}` });
     }
   );
+});
+
+app.delete('/api/admin/user/:id', authenticateAdmin, (req, res) => {
+  const targetId = req.params.id;
+  if (targetId === req.user.id) {
+    return res.status(400).json({ error: 'Cannot delete yourself' });
+  }
+
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+    db.run(`DELETE FROM transfers WHERE sender_id = ? OR recipient_id = ?`, [targetId, targetId]);
+    db.run(`DELETE FROM users WHERE id = ?`, [targetId], function(err) {
+      if (err) {
+        db.run("ROLLBACK");
+        return res.status(500).json({ error: err.message });
+      }
+      db.run("COMMIT");
+      res.json({ message: 'User and their transaction history deleted successfully' });
+    });
+  });
 });
 
 app.listen(PORT, () => {

@@ -24,6 +24,7 @@ db.serialize(() => {
     sender_id TEXT,
     recipient_id TEXT,
     amount REAL,
+    note TEXT,
     status TEXT DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(sender_id) REFERENCES users(id),
