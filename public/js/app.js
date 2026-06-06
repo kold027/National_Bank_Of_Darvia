@@ -87,9 +87,9 @@ async function fetchUserData() {
     document.getElementById('user-display').textContent = `Welcome, ${currentUser.full_name}`;
     
     const balanceEl = document.getElementById('balance-display');
-    balanceEl.textContent = currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2});
+    balanceEl.textContent = `£${currentUser.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     
-    // Apply red color to numeric balance if negative
+    // Apply red color to full balance (including £) if negative
     if (currentUser.balance < 0) {
         balanceEl.classList.add('neg-balance');
     } else {
